@@ -132,9 +132,7 @@ class my_evaluation:
             rec=0
             
             
-        #referred the code for precision written by professor.
-        #recall and precision values for micro macro and average are calculated similarly.
-        #In case of recall, tp and fn are used.
+
         if target in self.classes_:
             tp = self.confusion_matrix[target]["TP"]
             fn = self.confusion_matrix[target]["FN"]
@@ -199,13 +197,13 @@ class my_evaluation:
                     else:
                         f1Score = 2 * ((prec * rec) / (prec + rec))
                     if average == "macro":
-                        #print(inside)
+
                         ratio = 1 / len(self.classes_)
                     elif average == "weighted":
                         ratio = Counter(self.actuals)[label] / float(n)
                     else:
                         raise Exception("Unknown type of average.")
-                        f1 += f1Score * ratio
+                    f1 += f1Score * ratio
 
 
         return f1
@@ -215,31 +213,33 @@ class my_evaluation:
     def auc(self, target):
         # compute AUC of ROC curve for each class
         # return auc = {self.classes_[i]: auc_i}, dict
-        if type(self.pred_proba)==type(None):
+        if type(self.pred_proba) == type(None):
             return None
         else:
             if target in self.classes_:
                 order = np.argsort(self.pred_proba[target])[::-1]
-                #print(order)
-                tp = self.confusion_matrix[target]["TP"]
-                fp = self.confusion_matrix[target]["FP"]
+
+                tp = 0
+                fp = 0
                 fn = Counter(self.actuals)[target]
                 tn = len(self.actuals) - fn
-                tpr = tp/(tp+fn)
-                fpr = fp/(fp+tn)
+                tpr = 0
+                fpr = 0
                 auc_target = 0
                 for i in order:
-                    pass
-                    #if self.actuals[i] == target:
-                        #tp = "write your own code"
-                        #fn = "write your own code"
-                        #tpr = "write your own code"
-                    #else:
-                        #fp = "write your own code"
-                        #tn = "write your own code"
-                        #pre_fpr = fpr
-                        #fpr = "write your own code"
-                        #auc_target = "write your own code"
+
+                    if self.actuals[i] == target:
+                        tp = tp+1
+                        fn = fn-1
+                        tpr = tp/(tp+fn)
+                    else:
+                        fp = fp + 1
+                        tn = tn - 1
+                        pre_fpr = fpr
+                        fpr = fp / (fp + tn)
+                        auc_target = auc_target +(tpr*(fpr-pre_fpr))
+
+
             else:
                 raise Exception("Unknown target class.")
 
@@ -283,13 +283,13 @@ for target in clf.classes_:
     metrics.precision(target)
     result[target]["prec"] = metrics.precision(target)
     result[target]["recall"] = metrics.recall(target)
-    #result[target]["f1"] = metrics.f1(target)
-    #result[target]["auc"] = metrics.auc(target)
+    result[target]["f1"] = metrics.f1(target)
+    result[target]["auc"] = metrics.auc(target)
 print("result")
 print(result)
-#f1 = {average: metrics.f1(target=None, average=average) for average in ["macro", "micro", "weighted"]}
-#print("Average F1 scores: ")
-#print(f1)
+f1 = {average: metrics.f1(target=None, average=average) for average in ["macro", "micro", "weighted"]}
+print("Average F1 scores: ")
+print(f1)
 
 
 
