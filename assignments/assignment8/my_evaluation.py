@@ -1,4 +1,13 @@
+
 import numpy as np
+#from my_evaluation import my_evaluation
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from collections import Counter
+from pprint import pprint
+from copy import deepcopy
+from pdb import set_trace
+
 import pandas as pd
 
 class my_evaluation:
@@ -10,30 +19,108 @@ class my_evaluation:
         # predictions: list of predicted classes
         # actuals: list of ground truth
         # pred_proba: pd.DataFrame of prediction probability of belonging to each class
-        self.predictions = predictions
-        self.actuals = actuals
+        self.predictions = np.array(predictions)
+        self.actuals = np.array(actuals)
         self.pred_proba = pred_proba
-        if self.pred_proba:
-            self.classes_ = self.pred_proba.keys()
+        if type(self.pred_proba)!=type(None):
+            self.classes_ = list(self.pred_proba.keys())
         else:
             self.classes_ = list(set(list(self.predictions)+list(self.actuals)))
-        self.confusion = None
+    
+        print(self.classes_)
+        self.confusion_matrix = None
 
     def confusion(self):
         # compute confusion matrix for each class in self.classes_
-        # self.confusion = {self.classes_[i]: {"TP":tp, "TN": tn, "FP": fp, "FN": fn}}
+        # self.confusion_matrix = {self.classes_[i]: {"TP":tp, "TN": tn, "FP": fp, "FN": fn}}
         # no return variables
-        # write your own code below
-        return
 
-    def prec(self, target=None, average = "macro"):
+
+        correct = self.predictions == self.actuals
+        wrong = self.predictions != self.actuals
+        self.acc = float(Counter(correct)[True])/len(correct)
+        self.err = float(Counter(wrong)[True])/len(wrong)
+        self.confusion_matrix = {}
+
+        #initializing the values to be zero
+        for label in self.classes_:
+            tp=0
+            fp=0
+            tn=0
+            fn=0
+
+
+            for i in range(len(self.predictions)):
+
+                if self.actuals[i]==label and label==self.predictions[i]:
+
+                    tp=tp+1
+                    #print(this is the value for tp)
+
+                elif  self.predictions[i]==label and label!=self.actuals[i]:
+                    fp=fp+1
+                    #print(this is value for fp)
+            
+
+                elif self.actuals[i]==label and self.predictions[i]!=label:
+                    fn=fn+1
+
+                elif self.actuals[i]!=label and label!=self.predictions[i]:
+                    tn=tn+1
+                    #print(self.confusion_matrix)
+                
+                self.confusion_matrix[label] = {"TP":tp, "TN": tn, "FP": fp, "FN": fn}
+
+        print("confusion matrix:")
+        print(self.confusion_matrix)
+
+        return   
+    
+    def accuracy(self):
+        if self.confusion_matrix==None:
+            self.confusion()
+        return self.acc
+
+    def precision(self, target=None, average = "macro"):
         # compute precision
         # target: target class (str). If not None, then return precision of target class
-        # average: {"macro", "micro", "weighted"}. If target==None, return average precision
+
         # output: prec = float
         # note: be careful for divided by 0
-        # write your own code below
-        return self.predictions
+
+        if self.confusion_matrix==None:
+            self.confusion()
+        if target in self.classes_:
+            tp = self.confusion_matrix[target]["TP"]
+            fp = self.confusion_matrix[target]["FP"]
+            if tp+fp == 0:
+                prec = 0
+            else:
+                prec = float(tp) / (tp + fp)
+        else:
+            #return the accuracy for micro averages
+            if average == "micro":
+                prec = self.accuracy()
+            else:
+                prec = 0
+                n = len(self.actuals)
+                for label in self.classes_:
+                    tp = self.confusion_matrix[label]["TP"]
+                    fp = self.confusion_matrix[label]["FP"]
+                    if tp + fp == 0:
+                        precision = 0
+                    else:
+                        precision = float(tp) / (tp + fp)
+                    if average == "macro":
+                        ratio = 1 / len(self.classes_)
+                    elif average == "weighted":
+                        ratio = Counter(self.actuals)[label] / float(n)
+                    else:
+                        raise Exception("Unknown type of average.")
+                    prec += precision * ratio
+
+        #print(prec)
+        return prec
 
     def recall(self, target=None, average = "macro"):
         # compute recall
@@ -41,34 +128,168 @@ class my_evaluation:
         # average: {"macro", "micro", "weighted"}. If target==None, return average recall
         # output: recall = float
         # note: be careful for divided by 0
-        # write your own code below
-        return recall
+        if target==None:
+            rec=0
+            
+            
+        #referred the code for precision written by professor.
+        #recall and precision values for micro macro and average are calculated similarly.
+        #In case of recall, tp and fn are used.
+        if target in self.classes_:
+            tp = self.confusion_matrix[target]["TP"]
+            fn = self.confusion_matrix[target]["FN"]
+            if tp+fn == 0:
+                rec = 0
+            else:
+                rec = float(tp) / (tp + fn)
+        else:
+            if average == "micro":
+                rec = self.accuracy()
+            else:
+                rec = 0
+                n = len(self.actuals)
+                for label in self.classes_:
+                    tp = self.confusion_matrix[label]["TP"]
+                    fn = self.confusion_matrix[label]["FN"]
+                    if tp + fn == 0:
+                        recall = 0
+                    else:
+                        recall = float(tp) / (tp + fn)
+                    if average == "macro":
+                        ratio = 1 / len(self.classes_)
+                    elif average == "weighted":
+                        ratio = Counter(self.actuals)[label] / float(n)
+                    else:
+                        raise Exception("Unknown type of average.")
+                        rec += recall * ratio
 
+        #print(rec)
+        return rec
+
+ 
     def f1(self, target=None, average = "macro"):
         # compute f1
         # target: target class (str). If not None, then return f1 of target class
         # average: {"macro", "micro", "weighted"}. If target==None, return average f1
         # output: f1 = float
-        # note: be careful for divided by 0
-        # write your own code below
+
+            
+        if target in self.classes_:
+            prec=self.precision(target,average)
+            rec=self.recall(target,average)
+
+            if prec+rec == 0:
+                f1 = 0
+            else:
+                f1 = 2 * ((prec * rec) / (prec + rec))
+        else:
+            if average == "micro":
+                f1 = self.accuracy()
+
+            else:
+
+                f1=0
+                n = len(self.actuals)
+                for label in self.classes_:
+                    prec=self.precision(label,average)
+                    rec=self.recall(label,average)
+                    #initial condition
+                    if prec + rec == 0:
+                        f1Score = 0
+                    else:
+                        f1Score = 2 * ((prec * rec) / (prec + rec))
+                    if average == "macro":
+                        #print(inside)
+                        ratio = 1 / len(self.classes_)
+                    elif average == "weighted":
+                        ratio = Counter(self.actuals)[label] / float(n)
+                    else:
+                        raise Exception("Unknown type of average.")
+                        f1 += f1Score * ratio
+
+
         return f1
 
-    def fpr(self, target=None, average = "macro"):
-        # compute false positive rate
-        # target: target class (str). If not None, then return fpr of target class
-        # average: {"macro", "micro", "weighted"}. If target==None, return average fpr
-        # output: fpr = float
-        # note: be careful for divided by 0
-        # write your own code below
-        return fpr
 
+        
     def auc(self, target):
         # compute AUC of ROC curve for each class
         # return auc = {self.classes_[i]: auc_i}, dict
-        if self.pred_proba==None:
+        if type(self.pred_proba)==type(None):
             return None
         else:
-            # write your own code below
-            return auc
+            if target in self.classes_:
+                order = np.argsort(self.pred_proba[target])[::-1]
+                #print(order)
+                tp = self.confusion_matrix[target]["TP"]
+                fp = self.confusion_matrix[target]["FP"]
+                fn = Counter(self.actuals)[target]
+                tn = len(self.actuals) - fn
+                tpr = tp/(tp+fn)
+                fpr = fp/(fp+tn)
+                auc_target = 0
+                for i in order:
+                    pass
+                    #if self.actuals[i] == target:
+                        #tp = "write your own code"
+                        #fn = "write your own code"
+                        #tpr = "write your own code"
+                    #else:
+                        #fp = "write your own code"
+                        #tn = "write your own code"
+                        #pre_fpr = fpr
+                        #fpr = "write your own code"
+                        #auc_target = "write your own code"
+            else:
+                raise Exception("Unknown target class.")
+
+            return auc_target
+
+import numpy as np
+#from my_evaluation import my_evaluation
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from collections import Counter
+from pprint import pprint
+from copy import deepcopy
+from pdb import set_trace
+
+
+# Load training data
+data_train = pd.read_csv("..\data\Iris_train.csv")
+
+# Separate independent variables and dependent variables
+independent = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+X = data_train[independent]
+y = data_train["Species"]
+
+# Fit model
+clf = DecisionTreeClassifier(criterion="entropy", max_depth=2)
+clf.fit(X, y)
+
+# Predict on training data
+predictions = clf.predict(X)
+
+# Predict probabilities
+probs = clf.predict_proba(X)
+probs = pd.DataFrame({key: probs[:, i] for i, key in enumerate(clf.classes_)})
+
+
+# Evaluate results
+metrics = my_evaluation(predictions, y, probs)
+result = {}
+for target in clf.classes_:
+    result[target] = {}
+    metrics.precision(target)
+    result[target]["prec"] = metrics.precision(target)
+    result[target]["recall"] = metrics.recall(target)
+    #result[target]["f1"] = metrics.f1(target)
+    #result[target]["auc"] = metrics.auc(target)
+print("result")
+print(result)
+#f1 = {average: metrics.f1(target=None, average=average) for average in ["macro", "micro", "weighted"]}
+#print("Average F1 scores: ")
+#print(f1)
+
 
 
