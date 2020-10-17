@@ -35,6 +35,3 @@ if __name__ == "__main__":
     print("Average F1 scores: ")
     print(f1)
 
-    
-    
-
