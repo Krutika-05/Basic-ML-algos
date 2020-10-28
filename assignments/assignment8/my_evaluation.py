@@ -26,7 +26,7 @@ class my_evaluation:
         # no return variables
         # write your own code below
         correct = self.predictions == self.actuals
-        self.acc = float(Counter(correct)[True])/len(correct)
+        self.acc = float(Counter(correct)[True])/(len(correct)+0.0001)
         self.confusion_matrix = {}
         for label in self.classes_:
             tp = Counter(correct & (self.predictions == label))[True]
@@ -125,7 +125,7 @@ class my_evaluation:
 
         prec = self.precision(target = target, average=average)
         rec = self.recall(target = target, average=average)
-        f1_score = 2.0 * prec * rec / (prec + rec)
+        f1_score = 2.0 * prec * rec /( (prec + rec)+0.0001)
         return f1_score
 
     def auc(self, target):
