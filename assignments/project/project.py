@@ -1,19 +1,16 @@
-import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn import svm
-from sklearn import metrics
-from sklearn.metrics import accuracy_score,recall_score,precision_score,f1_score
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.utils import resample 
-from sklearn.model_selection import train_test_split
 import gensim
 from gensim.parsing.preprocessing import STOPWORDS
 from gensim.parsing.preprocessing import remove_stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import RidgeClassifier
+from sklearn import svm
 import time
 import sys
-#sys.path.insert(0, '..')
-#from assignment8.my_evaluation import my_evaluation
+sys.path.insert(0, '..')
+from assignment8.my_evaluation import my_evaluation
 
 class my_model():
     def fit(self, X, y):
@@ -21,10 +18,11 @@ class my_model():
         self.y_cls = y
         X = self.preprocessing_data(X)
         
-        self.preprocessor = TfidfVectorizer(stop_words='english', norm='l2', use_idf=False, smooth_idf=False)
+        self.preprocessor = TfidfVectorizer(stop_words='english', norm='l2', use_idf=True, smooth_idf=True, ngram_range=(1,4))
         XX = self.preprocessor.fit_transform(X["description"])
-        
-        self.classifier = svm.SVC(class_weight="balanced")
+        #self.classifier = KNeighborsClassifier(n_neighbors = 5,class_weight='balanced')
+        self.classifier = SGDClassifier(class_weight="balanced",random_state=5)
+        #self.classifier = svm.SVC(class_weight="balanced")
         self.classifier.fit(XX, y)
         return
 
@@ -40,10 +38,10 @@ class my_model():
         data_frame['location'] = data_frame.location.fillna('none')
     
 
-        data_frame['requirements'] = data_frame.description.fillna(' ')
+        data_frame['requirements'] = data_frame.description.fillna('not specified')
         
         
-        data_frame['description'] = data_frame.description.fillna(' ')
+        data_frame['description'] = data_frame.description.fillna('not specified')
         
         data_frame['has_company_logo'] = data_frame.has_company_logo.map({1 : 'True', 0 : 'False'})
         
