@@ -40,10 +40,10 @@ class my_model():
         data_frame['location'] = data_frame.location.fillna('none')
     
 
-        data_frame['requirements'] = data_frame.description.fillna('not specified')
+        data_frame['requirements'] = data_frame.description.fillna(' ')
         
         
-        data_frame['description'] = data_frame.description.fillna('not specified')
+        data_frame['description'] = data_frame.description.fillna(' ')
         
         data_frame['has_company_logo'] = data_frame.has_company_logo.map({1 : 'True', 0 : 'False'})
         
@@ -70,5 +70,3 @@ class my_model():
         
 
         return data_frame
-    
-    
